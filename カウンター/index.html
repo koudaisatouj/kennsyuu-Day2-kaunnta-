@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カウンターアプリ</title>
+  <style>
+    :root {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color-scheme: light dark;
+      --bg: #0d1117;
+      --panel: #161b22;
+      --accent: #2ea043;
+      --danger: #f85149;
+      --text: #f0f6fc;
+      --muted: #8b949e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1f2937, #0d1117 70%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(440px, 100%);
+      background: rgba(13, 17, 23, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 0;
+      letter-spacing: 0.2em;
+      font-size: 1.6rem;
+    }
+
+    .display {
+      font-size: clamp(2.4rem, 8vw, 3.4rem);
+      text-align: center;
+      padding: 24px;
+      background: var(--panel);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .controls button,
+    .extras button {
+      padding: 14px 16px;
+      min-width: 40px;
+      border-radius: 999px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+
+    .up {
+      background: var(--accent);
+      color: #04120a;
+    }
+
+    .down {
+      background: var(--danger);
+      color: #1e0202;
+    }
+
+    .reset {
+      background: #6e7681;
+      grid-column: span 2;
+    }
+
+    .extras {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .extra-btn {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .step-config {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .step-config input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .history {
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.9rem;
+    }
+
+    .history h2 {
+      font-size: 1rem;
+      margin: 0 0 8px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    .history ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .history li {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+      padding-bottom: 4px;
+    }
+
+    .history time {
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="app" role="region" aria-label="カウンターアプリ">
+    <h1>カウンター</h1>
+    <div id="countDisplay" class="display" aria-live="polite">0</div>
+
+    <section class="controls" aria-label="主要ボタン">
+      <button type="button" id="incrementBtn" class="up">+1</button>
+      <button type="button" id="decrementBtn" class="down">-1</button>
+      <button type="button" id="resetBtn" class="reset">Reset</button>
+    </section>
+
+    <section class="extras" aria-label="クイックボタン">
+      <button type="button" class="extra-btn" data-step="10">+10</button>
+      <button type="button" class="extra-btn" data-step="-10">-10</button>
+      <button type="button" class="extra-btn" data-step="50">+50</button>
+      <button type="button" class="extra-btn" data-step="-50">-50</button>
+    </section>
+
+    <section class="step-config" aria-label="増減値の設定">
+      <label for="customStep">増減値</label>
+      <input type="number" id="customStep" value="5" min="1" aria-label="増減値入力">
+      <button type="button" id="applyStep" class="extra-btn">+/- 設定</button>
+    </section>
+
+    <section class="history" aria-label="履歴">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <h2 style="margin: 0;">履歴</h2>
+        <button type="button" id="saveBtn" class="extra-btn" style="padding: 8px 14px;">保存</button>
+      </div>
+      <ul id="historyList"></ul>
+    </section>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
