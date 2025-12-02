@@ -8,9 +8,14 @@ const historyListElement = document.getElementById("historyList");
 const STORAGE_KEY = "counterValue";
 const HISTORY_STORAGE_KEY = "counterHistory";
 const HISTORY_LIMIT = 10;
+const AUTO_INTERVAL_MS = 120;
 
 let count = 0;
 let historyEntries = [];
+let autoIncrementTimerId = null;
+let autoDecrementTimerId = null;
+let shouldSkipIncrementClick = false;
+let shouldSkipDecrementClick = false;
 
 function updateCountDisplay() {
   if (!countDisplay) return;
@@ -75,7 +80,9 @@ function loadHistoryFromStorage() {
           .map((entry) => ({
             value: Number(entry.value),
             at:
-              typeof entry.at === "string" ? entry.at : new Date().toISOString(),
+              typeof entry.at === "string"
+                ? entry.at
+                : new Date().toISOString(),
           }))
           .filter((entry) => Number.isFinite(entry.value))
           .slice(0, HISTORY_LIMIT);
@@ -129,12 +136,68 @@ function handleSaveAction() {
   addHistoryRecord(count);
 }
 
+function startAutoIncrement() {
+  if (autoIncrementTimerId) return;
+  shouldSkipIncrementClick = true;
+  incrementCount();
+  autoIncrementTimerId = setInterval(incrementCount, AUTO_INTERVAL_MS);
+}
+
+function stopAutoIncrement() {
+  if (autoIncrementTimerId) {
+    clearInterval(autoIncrementTimerId);
+    autoIncrementTimerId = null;
+  }
+  if (shouldSkipIncrementClick) {
+    setTimeout(() => {
+      shouldSkipIncrementClick = false;
+    }, 0);
+  }
+}
+
+function startAutoDecrement() {
+  if (autoDecrementTimerId) return;
+  shouldSkipDecrementClick = true;
+  decrementCount();
+  autoDecrementTimerId = setInterval(decrementCount, AUTO_INTERVAL_MS);
+}
+
+function stopAutoDecrement() {
+  if (autoDecrementTimerId) {
+    clearInterval(autoDecrementTimerId);
+    autoDecrementTimerId = null;
+  }
+  if (shouldSkipDecrementClick) {
+    setTimeout(() => {
+      shouldSkipDecrementClick = false;
+    }, 0);
+  }
+}
+
 function setupCounterButtons() {
   if (incrementBtn) {
-    incrementBtn.addEventListener("click", incrementCount);
+    incrementBtn.addEventListener("click", () => {
+      if (shouldSkipIncrementClick) {
+        shouldSkipIncrementClick = false;
+        return;
+      }
+      incrementCount();
+    });
+    incrementBtn.addEventListener("mousedown", startAutoIncrement);
+    incrementBtn.addEventListener("mouseup", stopAutoIncrement);
+    incrementBtn.addEventListener("mouseleave", stopAutoIncrement);
   }
   if (decrementBtn) {
-    decrementBtn.addEventListener("click", decrementCount);
+    decrementBtn.addEventListener("click", () => {
+      if (shouldSkipDecrementClick) {
+        shouldSkipDecrementClick = false;
+        return;
+      }
+      decrementCount();
+    });
+    decrementBtn.addEventListener("mousedown", startAutoDecrement);
+    decrementBtn.addEventListener("mouseup", stopAutoDecrement);
+    decrementBtn.addEventListener("mouseleave", stopAutoDecrement);
   }
   if (resetBtn) {
     resetBtn.addEventListener("click", resetCount);
@@ -142,6 +205,11 @@ function setupCounterButtons() {
   if (saveBtn) {
     saveBtn.addEventListener("click", handleSaveAction);
   }
+
+  document.addEventListener("mouseup", () => {
+    stopAutoIncrement();
+    stopAutoDecrement();
+  });
 }
 
 loadHistoryFromStorage();
