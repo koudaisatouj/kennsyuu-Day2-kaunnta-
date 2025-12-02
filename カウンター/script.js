@@ -2,7 +2,9 @@
 const incrementBtn = document.getElementById("incrementBtn");
 const decrementBtn = document.getElementById("decrementBtn");
 const resetBtn = document.getElementById("resetBtn");
+const saveBtn = document.getElementById("saveBtn");
 
+const STORAGE_KEY = "counterValue";
 let count = 0;
 
 function updateCountDisplay() {
@@ -10,19 +12,42 @@ function updateCountDisplay() {
   countDisplay.textContent = String(count);
 }
 
-function incrementCount() {
-  count += 1;
+function setCount(newValue) {
+  count = newValue;
   updateCountDisplay();
+}
+
+function incrementCount() {
+  setCount(count + 1);
+  saveCountToStorage();
 }
 
 function decrementCount() {
-  count -= 1;
-  updateCountDisplay();
+  setCount(count - 1);
+  saveCountToStorage();
 }
 
 function resetCount() {
-  count = 0;
-  updateCountDisplay();
+  setCount(0);
+  saveCountToStorage();
+}
+
+function loadCountFromStorage() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const parsed = stored !== null ? Number(stored) : 0;
+    setCount(Number.isFinite(parsed) ? parsed : 0);
+  } catch {
+    setCount(0);
+  }
+}
+
+function saveCountToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, String(count));
+  } catch {
+    // localStorage が無効な場合は無視
+  }
 }
 
 function setupCounterButtons() {
@@ -35,7 +60,11 @@ function setupCounterButtons() {
   if (resetBtn) {
     resetBtn.addEventListener("click", resetCount);
   }
+  if (saveBtn) {
+    saveBtn.addEventListener("click", saveCountToStorage);
+  }
 }
 
+loadCountFromStorage();
 setupCounterButtons();
 updateCountDisplay();
