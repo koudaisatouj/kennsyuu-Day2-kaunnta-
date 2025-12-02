@@ -4,6 +4,9 @@ const decrementBtn = document.getElementById("decrementBtn");
 const resetBtn = document.getElementById("resetBtn");
 const saveBtn = document.getElementById("saveBtn");
 const historyListElement = document.getElementById("historyList");
+const quickStepButtons = document.querySelectorAll(".extras .extra-btn[data-step]");
+const customStepInput = document.getElementById("customStep");
+const applyStepBtn = document.getElementById("applyStep");
 
 const STORAGE_KEY = "counterValue";
 const HISTORY_STORAGE_KEY = "counterHistory";
@@ -12,6 +15,7 @@ const AUTO_INTERVAL_MS = 120;
 
 let count = 0;
 let historyEntries = [];
+let stepValue = 1;
 let autoIncrementTimerId = null;
 let autoDecrementTimerId = null;
 let shouldSkipIncrementClick = false;
@@ -101,16 +105,54 @@ function setCount(newValue) {
   updateCountDisplay();
 }
 
+function changeCountBy(delta) {
+  setCount(count + delta);
+}
+
+function incrementCountBy(step) {
+  changeCountBy(step);
+}
+
+function decrementCountBy(step) {
+  changeCountBy(-Math.abs(step));
+}
+
 function incrementCount() {
-  setCount(count + 1);
+  incrementCountBy(stepValue);
 }
 
 function decrementCount() {
-  setCount(count - 1);
+  decrementCountBy(stepValue);
 }
 
 function resetCount() {
   setCount(0);
+}
+
+function updatePrimaryButtonLabels() {
+  if (incrementBtn) {
+    incrementBtn.textContent = `+${stepValue}`;
+  }
+  if (decrementBtn) {
+    decrementBtn.textContent = `-${stepValue}`;
+  }
+}
+
+function setStepValue(newStepValue) {
+  if (!Number.isFinite(newStepValue) || newStepValue <= 0) {
+    return;
+  }
+  stepValue = Math.floor(newStepValue);
+  if (customStepInput) {
+    customStepInput.value = String(stepValue);
+  }
+  updatePrimaryButtonLabels();
+}
+
+function applyStepValueFromInput() {
+  if (!customStepInput) return;
+  const parsed = Number(customStepInput.value);
+  setStepValue(parsed);
 }
 
 function loadCountFromStorage() {
@@ -205,14 +247,33 @@ function setupCounterButtons() {
   if (saveBtn) {
     saveBtn.addEventListener("click", handleSaveAction);
   }
-
-  document.addEventListener("mouseup", () => {
-    stopAutoIncrement();
-    stopAutoDecrement();
+  quickStepButtons.forEach((button) => {
+    const delta = Number(button.dataset.step);
+    if (!Number.isFinite(delta) || delta === 0) return;
+    button.addEventListener("click", () => {
+      if (delta > 0) {
+        incrementCountBy(delta);
+      } else {
+        decrementCountBy(Math.abs(delta));
+      }
+    });
   });
+  if (applyStepBtn) {
+    applyStepBtn.addEventListener("click", applyStepValueFromInput);
+  }
+}
+
+function initializeStepValue() {
+  const initial = customStepInput ? Number(customStepInput.value) : stepValue;
+  if (Number.isFinite(initial) && initial > 0) {
+    setStepValue(initial);
+  } else {
+    setStepValue(stepValue);
+  }
 }
 
 loadHistoryFromStorage();
 loadCountFromStorage();
+initializeStepValue();
 setupCounterButtons();
 updateCountDisplay();
